@@ -1,0 +1,2 @@
+llama-index
+evadb==0.3.7
