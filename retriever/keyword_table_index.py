@@ -8,15 +8,17 @@ Consider the following question:
 {question}
 -----------------------------------------------------------
 
-Please use up to {max_keywords} keywords to summarize the question.
+Please extract up to {max_keywords} keywords from the question.
 The keywords should capture the topic/main idea of the given question,
 and will be used to look up the answer to the question.
-Avoid using stop words as keywords.
-Reply ONLY the keywords, one in a separate line. For example:
+Avoid extract stop words.
+Reply ONLY the keywords, one in a separate line, and nothing else. For example:
 -----------------------------------------------------------
 Atlanta
 population
 -----------------------------------------------------------
+
+Keywords:
 """
 
 DEFAULT_QUESTION_KEYPHRASE_EXTRACT_TEMPLATE = """
@@ -25,15 +27,17 @@ Consider the following question:
 {question}
 -----------------------------------------------------------
 
-Please extract up to {max_keywords} keyphrases from the question.
+Please extract up to {max_keywords} concise keyphrases from the question.
 The keyphrases should capture the topic/main idea of the given question,
 and will be used to look up the answer to the question.
 Avoid extracting stop words.
-Reply ONLY the keyphrases, one in a separate line. For example:
+Reply ONLY the keyphrases, one in a separate line, and nothing else. For example:
 -----------------------------------------------------------
 Atlanta
-population
+capital city of Georgia
 -----------------------------------------------------------
+
+Keywords:
 """
 
 DEFAULT_TEXT_KEYWORD_EXTRACT_TEMPLATE = """
@@ -45,29 +49,32 @@ Consider the following text:
 Please use up to {max_keywords} keywords to summarize the text.
 The keywords should capture the topic/main idea of the given text,
 and will be used to categorize/look up the text.
-Avoid using stop words as keywords.
-Reply ONLY the keywords, one in a separate line. For example:
+Avoid extracting stop words.
+Reply ONLY the keywords, one in a separate line, and nothing else. For example:
 -----------------------------------------------------------
 Atlanta
 population
 -----------------------------------------------------------
+
+Keywords:
 """
 
 DEFAULT_TEXT_KEYPHRASE_EXTRACT_TEMPLATE = """
-Consider the following question:
+Consider the following text:
 -----------------------------------------------------------
-{question}
+{text}
 -----------------------------------------------------------
 
-Please extract up to {max_keywords} keyphrases from the text.
+Please use up to {max_keywords} concise keyphrases to summarize the text.
 The keyphrases should capture the topic/main idea of the given text,
-and will be used to look up the answer to the question.
-Avoid extracting stop words.
-Reply ONLY the keyphrases, one in a separate line. For example:
+and will be used to categorize/look up the text.
+Reply ONLY the keyphrases, one in a separate line, and nothing else. For example:
 -----------------------------------------------------------
 Atlanta
 capital city of Georgia
 -----------------------------------------------------------
+
+Keywords:
 """
 
 class KeywordTableIndexRetriever(BaseRetriever):
@@ -75,8 +82,8 @@ class KeywordTableIndexRetriever(BaseRetriever):
   On retrieval, pick the K chunks having the most keyword matches;
   Keywords can be matched using either exact match or semantic search"""
   
-  def __init__(self, cursor: evadb.EvaDBCursor, doc: str, max_keywords: int = 10,
-               model: str = "gpt-35-turbo", top_k: int = 4, init: bool = False, exact_match: bool = True,
+  def __init__(self, cursor: evadb.EvaDBCursor, doc: str, max_keywords: int = 20,
+               model: str = "gpt-3.5-turbo-1106", top_k: int = 8, new: bool = False, exact_match: bool = True,
                text_template = None,
                question_template = None) -> None:
     super().__init__(cursor, doc)
@@ -95,7 +102,7 @@ class KeywordTableIndexRetriever(BaseRetriever):
       if self.exact_match else \
       DEFAULT_QUESTION_KEYPHRASE_EXTRACT_TEMPLATE
     
-    if init:
+    if new:
       self.cursor.query(f"""
         DROP TABLE IF EXISTS {self.doc}_keywords;
       """).df()
@@ -109,7 +116,6 @@ class KeywordTableIndexRetriever(BaseRetriever):
       print(f"{len(docs)} chunks")
 
       for _, row in docs.iterrows():
-        row = docs.loc[0]
         prompt = self.text_template.format(text = row[f"{self.doc}.data"], max_keywords = self.max_keywords)
         print(f"--------------------\n{prompt}")
         response, cost = llm_call(model = self.model, user_prompt = prompt)
@@ -120,8 +126,12 @@ class KeywordTableIndexRetriever(BaseRetriever):
 
         for kw in keywords.split("\n"):
           self.cursor.query(f"""
-            INSERT INTO {self.doc}_keywords(chunk_id, keyword) VALUES ({row[f"{self.doc}.chunk_id"]}, "{kw.lower().strip()}");
+            INSERT INTO {self.doc}_keywords(chunk_id, keyword) VALUES ({row[f"{self.doc}.chunk_id"]}, "{kw.strip()}");
           """).df()
+      
+      cursor.query(f"""
+        SELECT * FROM {self.doc}_keywords;
+      """).df()[[f"{self.doc}_keywords.chunk_id", f"{self.doc}_keywords.keyword"]].to_csv(f"./{self.doc}_keywords.csv", index = False)
       
       if not self.exact_match:
         self.cursor.query("""
@@ -139,10 +149,10 @@ class KeywordTableIndexRetriever(BaseRetriever):
     
     if self.exact_match:
       keywords = self.cursor.query(f"""
-        SELECT chunk_id, keywords FROM {self.doc}_keywords;
+        SELECT chunk_id, keyword FROM {self.doc}_keywords;
       """).df()
       for _, row in keywords.iterrows():
-        kw = row[f"{self.doc}_keywords.keyword"]
+        kw = row[f"{self.doc}_keywords.keyword"].lower()
         chunk_id = row[f"{self.doc}_keywords.chunk_id"]
         if kw not in self.keyword_table.keys():
           self.keyword_table[kw] = [chunk_id]
@@ -157,13 +167,15 @@ class KeywordTableIndexRetriever(BaseRetriever):
     print(prompt)
     response, cost = llm_call(model = self.model, user_prompt = prompt)
     total_cost += cost
-    keywords = set(response["choices"][0]["message"]["content"].lower().split("\n"))
-    print(f"""question keywords: {response["choices"][0]["message"]["content"]}""")
+    print(f"""{response["choices"][0]["message"]["content"]}""")
+    keywords = set(response["choices"][0]["message"]["content"].split("\n"))
     
-    match_count = {int:int}
+    match_count = {}
     if self.exact_match:
       for kw in keywords:
-        for chunk_id in self.keyword_table[kw]:
+        if kw.lower() not in self.keyword_table.keys():
+          continue
+        for chunk_id in self.keyword_table[kw.lower()]:
           if chunk_id not in match_count.keys():
             match_count[chunk_id] = 1
           else:
@@ -176,7 +188,7 @@ class KeywordTableIndexRetriever(BaseRetriever):
             Similarity(
               SentenceFeatureExtractor({kw}),
               SentenceFeatureExtractor(keyword)
-            )
+            ) ASC
           LIMIT {self.top_k}
         """).df()
         for _, row in matches.iterrows():
@@ -192,6 +204,7 @@ class KeywordTableIndexRetriever(BaseRetriever):
     for chunk_id in chunk_ids:
       chunks.append(self.cursor.query(f"""
         SELECT data FROM {self.doc} WHERE chunk_id = {chunk_id};
-      """).df()["data"][0])
+      """).df()[f"{self.doc}.data"][0])
+    print("\n\n\n".join(chunks))
 
     return chunks, total_cost

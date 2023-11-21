@@ -15,8 +15,8 @@ logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 OPENAI_PRICING = {
-  'gpt-35-turbo': {'prompt': 0.0015, 'completion': 0.002},
-  'gpt-35-turbo-16k': {'prompt': 0.003, 'completion': 0.004},
+  'gpt-3.5-turbo-1106': {'prompt': 0.0015, 'completion': 0.002},
+  'gpt-3.5-turbo-16k': {'prompt': 0.003, 'completion': 0.004},
   'gpt-4-0613': {'prompt': 0.03, 'completion': 0.06},
   'gpt-4-32k': {'prompt': 0.06, 'completion': 0.12},
   'embedding': {'hugging_face': 0, 'text-embedding-ada-002': 0.0001}
@@ -24,8 +24,8 @@ OPENAI_PRICING = {
 
 
 OPENAI_MODEL_CONTEXT_LENGTH = {
-  'gpt-35-turbo': 4097,
-  'gpt-35-turbo-16k': 16385,
+  'gpt-3.5-turbo-1106': 4097,
+  'gpt-3.5-turbo-16k': 16385,
   'gpt-4-0613': 8192,
   'gpt-4-32k': 32768
 }

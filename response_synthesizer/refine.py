@@ -28,7 +28,7 @@ class RefineResponseSynthesizer(BaseResponseSynthesizer):
   """The first chunk is given directly to the LLM as context information;
   In subsequent calls, give the previous result and the next chunk as context information"""
   
-  def __init__(self, model: str = "gpt-35-turbo",
+  def __init__(self, model: str = "gpt-3.5-turbo-1106",
                qa_prompt: str = DEFAULT_QA_PROMPT_TEMPLATE,
                refine_prompt: str = DEFAULT_REFINE_PROMPT_TEMPLATE) -> None:
     super().__init__(model)

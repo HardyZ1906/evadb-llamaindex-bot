@@ -7,7 +7,7 @@ import evadb
 
 DEFAULT_CHUNK_SIZE = 1024
 
-def split_text_into_chuncks(text: str, model: str = "gpt-35-turbo", chunk_size: int = DEFAULT_CHUNK_SIZE) -> [str]:
+def split_text_into_chuncks(text: str, model: str = "gpt-3.5-turbo-1106", chunk_size: int = DEFAULT_CHUNK_SIZE) -> [str]:
   """Split `text` into chunks of size about (typically a bit above) `chunk_size` tokens of `model`'s"""
   enc = tiktoken.encoding_for_model(model_name = model)
   lines = text.split("\n")  # text is assumed to be line separated
@@ -24,7 +24,7 @@ def split_text_into_chuncks(text: str, model: str = "gpt-35-turbo", chunk_size: 
   return chunks
 
 
-def load_wiki_pages(page_titles: [str] = ["Toronto", "Chicago", "Houston", "Boston", "Atlanta"],
+def load_wiki_pages(page_titles: [str] = ["Toronto", "Boston", "Atlanta"],
                     doc: str = "cities") -> None:
   data_path = Path("data")
   if not data_path.exists():

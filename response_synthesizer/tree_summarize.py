@@ -25,7 +25,7 @@ class TreeSummarizeResponseSynthesizer(BaseResponseSynthesizer):
   and continue consulting the LLM
   """
   
-  def __init__(self, model: str = "gpt-35-turbo", batch_size: int = 2,
+  def __init__(self, model: str = "gpt-3.5-turbo-1106", batch_size: int = 2,
                qa_prompt: str = DEFAULT_QA_PROMPT_TEMPLATE,
                summary_prompt: str = DEFAULT_SUMMARY_PROMPT_TEMPLATE) -> None:
     super().__init__(model)

@@ -24,50 +24,51 @@ if __name__ == "__main__":
   cursor = evadb.connect().cursor()
   print("✅ Connected to EvaDB!")
   
-  # first = True
-  # doc = "cities"
+  first = False
+  doc = "cities"
   
-  # if os.getenv("OPENAI_API_KEY") is None:
-  #   api_key = getpass("Please provide your OpenAI API key (will be hidden): ")
-  #   # os.environ["OPENAI_API_KEY"] = api_key
-  #   openai.api_key = api_key
+  if os.getenv("OPENAI_API_KEY") is None:
+    api_key = getpass("Please provide your OpenAI API key (will be hidden): ")
+    os.environ["OPENAI_API_KEY"] = api_key
+    openai.api_key = api_key
   
-  # if first:
-  #   # print("Loading data...")
-  #   # load_wiki_pages(doc = doc)
-  #   # load_data_into_db(cursor)
-  #   # print("Data loaded!")
+  if first:
+    print("Loading data...")
+    load_wiki_pages(doc = doc)
+    load_data_into_db(cursor)
+    print("Data loaded!")
     
-  #   print("Building keyword table...")
-  #   keyword_table_index_retriever = KeywordTableIndexRetriever(cursor, doc, init = True)
-  #   print("Keyword table built!")
+    print("Building keyword table...")
+    keyword_table_index_retriever = KeywordTableIndexRetriever(cursor, doc, new = True)
+    print("Keyword table built!")
   
-  # # retriever = SummaryIndexRetriever(cursor, doc)
-  # # retriever = VectorStoreIndexRetriever(cursor, doc)
-  # # retriever = KeywordTableIndexRetriever(cursor, doc)
-  # retriever = keyword_table_index_retriever
+  # retriever = SummaryIndexRetriever(cursor, doc)
+  retriever = VectorStoreIndexRetriever(cursor, doc)
+  # retriever = KeywordTableIndexRetriever(cursor, doc)
   
-  # response_synthesizer = CompactResponseSynthesizer()
-  # # response_synthesizer = RefineResponseSynthesizer()
-  # # response_synthesizer = TreeSummarizeResponseSynthesizer()
+  response_synthesizer = CompactResponseSynthesizer()
+  # response_synthesizer = RefineResponseSynthesizer()
+  # response_synthesizer = TreeSummarizeResponseSynthesizer()
   
-  # # evaluator = Evaluator()
+  # evaluator = Evaluator()
   
-  # query_engine = SimpleQueryEngine(retriever, response_synthesizer)
-  # # query_engine = RetryQueryEngine(retriever, response_synthesizer, evaluator)
+  query_engine = SimpleQueryEngine(retriever, response_synthesizer)
+  # query_engine = RetryQueryEngine(retriever, response_synthesizer, evaluator)
   
-  # while True:
-  #   question = input("Please enter your question: ")
-  #   query_engine.query(question)
-  #   if input("Do you have any other questions? (y/n)\n").lower() not in ["y", "yes"]:
-  #     break
-  
-  query_str = ""
   while True:
-    query_str += input()
-    if query_str.endswith(";"):
-      try:
-        print(cursor.query(query_str).df())
-      except Exception as e:
-        print(e)
-      query_str = ""
+    question = input("Please enter your question: ")
+    answer, cost = query_engine.query(question)
+    print(f"answer: {answer}")
+    print(f"cost: {cost}")
+    if input("Do you have any other questions? (y/n)\n").lower() not in ["y", "yes"]:
+      break
+  
+  # query_str = ""
+  # while True:
+  #   query_str += input()
+  #   if query_str.endswith(";"):
+  #     try:
+  #       print(cursor.query(query_str).df())
+  #     except Exception as e:
+  #       print(e)
+  #     query_str = ""

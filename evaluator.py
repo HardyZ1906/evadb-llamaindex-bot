@@ -41,7 +41,7 @@ class EvaluationResult:
   comments: str
 
 class Evaluator:
-  def __init__(self, model: str = "gpt-35-turbo", eval_template: str = DEFAULT_EVAL_PROMPT_TEMPLATE) -> None:
+  def __init__(self, model: str = "gpt-3.5-turbo-1106", eval_template: str = DEFAULT_EVAL_PROMPT_TEMPLATE) -> None:
     self.model = model
     self.eval_template = eval_template
   
