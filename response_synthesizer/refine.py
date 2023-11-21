@@ -1,6 +1,6 @@
-import evadb
 from openai_utils import llm_call
-from compact import DEFAULT_QA_PROMPT_TEMPLATE
+from response_synthesizer.base import BaseResponseSynthesizer
+from response_synthesizer.compact import DEFAULT_QA_PROMPT_TEMPLATE
 
 DEFAULT_REFINE_PROMPT_TEMPLATE = """
 Below is a question:
@@ -20,21 +20,22 @@ Besides, we also have some additional context:
 
 Assuming no prior knowledge and based on the additional context ONLY,
 please refine the original answer.
+Besides, briefly justify your answer in one or two sentences.
 If the additional context is not useful, simply reply the original answer.
 """
 
-class RefineResponseSynthesizer:
+class RefineResponseSynthesizer(BaseResponseSynthesizer):
   """The first chunk is given directly to the LLM as context information;
   In subsequent calls, give the previous result and the next chunk as context information"""
   
-  def __init__(self, model: str = "gpt-4",
+  def __init__(self, model: str = "gpt-35-turbo",
                qa_prompt: str = DEFAULT_QA_PROMPT_TEMPLATE,
                refine_prompt: str = DEFAULT_REFINE_PROMPT_TEMPLATE) -> None:
-    self.model = model
+    super().__init__(model)
     self.qa_prompt = qa_prompt
     self.refine_prompt = refine_prompt
   
-  def generate_response(self, question: str, context: [str]) -> (str, int):
+  def synthesize(self, question: str, context: [str]) -> (str, int):
     total_cost = 0
     
     prompt = self.qa_prompt.format(question = question, context = context[0])

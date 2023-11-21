@@ -1,12 +1,13 @@
 import evadb
+from retriever.base import BaseRetriever
 
-class VectorStoreIndex:
+class VectorStoreIndexRetriever(BaseRetriever):
   """Text chunks are stored sequentially but have semantics extracted in advance;
   On retrieval, use the top K most relevant chunks as context"""
   
-  def __init__(self, cursor: evadb.EvaDBCursor, doc: str) -> None:
-    self.doc = doc
-    self.cursor = cursor
+  def __init__(self, cursor: evadb.EvaDBCursor, doc: str, top_k: int = 4) -> None:
+    super().__init__(cursor, doc)
+    self.top_k = top_k
     self.cursor.query("""
       CREATE FUNCTION IF NOT EXISTS SentenceFeatureExtractor
       IMPL './sentence_feature_extractor.py';
@@ -17,7 +18,7 @@ class VectorStoreIndex:
       USING FAISS;
     """).df()
 
-  def retrieve(self, question: str, top_k: int = 4) -> [str]:
+  def retrieve(self, question: str) -> ([str], int):
     return self.cursor.query(f"""
       SELECT data FROM {self.doc}
       ORDER BY
@@ -25,5 +26,5 @@ class VectorStoreIndex:
           SentenceFeatureExtractor({question}),
           SentenceFeatureExtractor(data)
         )
-      LIMIT {top_k};
-    """).df()["data"].tolist()
+      LIMIT {self.top_k};
+    """).df()[f"{self.doc}.data"].tolist(), 0

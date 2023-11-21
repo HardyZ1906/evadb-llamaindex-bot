@@ -63,7 +63,7 @@ def llm_call(model,
   if output_schema is not None:
     kwargs["function_call"] = output_schema
 
-  response = completion_with_backoff(
+  response = openai.ChatCompletion.create(
     model=model,
     temperature=0,
     messages=[

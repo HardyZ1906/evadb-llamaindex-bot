@@ -1,6 +1,6 @@
-import evadb
 from openai_utils import llm_call
-from compact import DEFAULT_QA_PROMPT_TEMPLATE
+from response_synthesizer.base import BaseResponseSynthesizer
+from response_synthesizer.compact import DEFAULT_QA_PROMPT_TEMPLATE
 
 DEFAULT_SUMMARY_PROMPT_TEMPLATE = """
 Below is a question:
@@ -16,23 +16,24 @@ concluded based on partial and distinct context information:
 
 Assuming no prior knowledge and based on these answers ONLY,
 please answer the question.
+Briefly justify your answer in one or two sentences.
 """
 
-class TreeSummarizeResponseSynthesizer:
+class TreeSummarizeResponseSynthesizer(BaseResponseSynthesizer):
   """In each round, feed the LLM text chunks in fixed sized batches as context information;
   If more than one answer were produced in the last round, use those answers as new text chunks
   and continue consulting the LLM
   """
   
-  def __init__(self, model: str = "gpt-4", batch_size: int = 2,
+  def __init__(self, model: str = "gpt-35-turbo", batch_size: int = 2,
                qa_prompt: str = DEFAULT_QA_PROMPT_TEMPLATE,
                summary_prompt: str = DEFAULT_SUMMARY_PROMPT_TEMPLATE) -> None:
-    self.model = model
+    super().__init__(model)
     self.batch_size = batch_size
     self.qa_prompt = qa_prompt
     self.summary_prompt = summary_prompt
 
-  def generate_response(self, question: str, context: [str]) -> (str, int):
+  def synthesize(self, question: str, context: [str]) -> (str, int):
     total_cost = 0
     
     answers = []
