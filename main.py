@@ -41,6 +41,10 @@ if __name__ == "__main__":
     print("Building keyword table...")
     keyword_table_index_retriever = KeywordTableIndexRetriever(cursor, doc, new = True)
     print("Keyword table built!")
+    
+    print("Building feature index...")
+    vector_store_index_retriever = VectorStoreIndexRetriever(cursor, doc, new = True)
+    print("Feature index built!")
   
   # retriever = SummaryIndexRetriever(cursor, doc)
   retriever = VectorStoreIndexRetriever(cursor, doc)
@@ -50,7 +54,7 @@ if __name__ == "__main__":
   # response_synthesizer = RefineResponseSynthesizer()
   # response_synthesizer = TreeSummarizeResponseSynthesizer()
   
-  # evaluator = Evaluator()
+  evaluator = Evaluator()
   
   query_engine = SimpleQueryEngine(retriever, response_synthesizer)
   # query_engine = RetryQueryEngine(retriever, response_synthesizer, evaluator)
@@ -62,13 +66,3 @@ if __name__ == "__main__":
     print(f"cost: {cost}")
     if input("Do you have any other questions? (y/n)\n").lower() not in ["y", "yes"]:
       break
-  
-  # query_str = ""
-  # while True:
-  #   query_str += input()
-  #   if query_str.endswith(";"):
-  #     try:
-  #       print(cursor.query(query_str).df())
-  #     except Exception as e:
-  #       print(e)
-  #     query_str = ""

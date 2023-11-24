@@ -1,2 +1,5 @@
-llama-index
-evadb==0.3.7
+evadb==0.3.8
+sentence_transformers
+openai
+pydantic==2.4.0
+tiktoken

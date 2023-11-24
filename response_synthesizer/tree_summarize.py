@@ -39,18 +39,24 @@ class TreeSummarizeResponseSynthesizer(BaseResponseSynthesizer):
     answers = []
     for i in range(0, len(context), self.batch_size):
       prompt = self.qa_prompt.format(question = question, context = "\n".join(context[i : i+self.batch_size]))
+      # print(prompt)
       response, cost = llm_call(model = self.model, user_prompt = prompt)
-      answers.append(response["choices"][0]["message"]["content"])
+      ans = response["choices"][0]["message"]["content"]
+      # print(ans)
+      answers.append(ans)
       total_cost += cost
     
     while len(answers) > 1:
       new_answers = []
       for i in range(0, len(answers), self.batch_size):
-        if i == len(answers - 1):
+        if i == len(answers) - 1:
           continue
         prompt = self.summary_prompt.format(question = question, answers = "\n".join(answers[i : i+self.batch_size]))
+        # print(prompt)
         response, cost = llm_call(model = self.model, user_prompt = prompt)
-        new_answers.append(response["choices"][0]["message"]["content"])
+        ans = response["choices"][0]["message"]["content"]
+        # print(ans)
+        new_answers.append(ans)
         total_cost += cost
       answers = new_answers
     

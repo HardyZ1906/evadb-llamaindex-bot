@@ -113,16 +113,16 @@ class KeywordTableIndexRetriever(BaseRetriever):
       docs = self.cursor.query(f"""
         SELECT chunk_id, data FROM {self.doc};
       """).df()
-      print(f"{len(docs)} chunks")
+      # print(f"{len(docs)} chunks")
 
       for _, row in docs.iterrows():
         prompt = self.text_template.format(text = row[f"{self.doc}.data"], max_keywords = self.max_keywords)
-        print(f"--------------------\n{prompt}")
+        # print(f"--------------------\n{prompt}")
         response, cost = llm_call(model = self.model, user_prompt = prompt)
         self.init_cost += cost
         
         keywords = response["choices"][0]["message"]["content"].lower()
-        print(f"--------------------\n{keywords}")
+        # print(f"--------------------\n{keywords}")
 
         for kw in keywords.split("\n"):
           self.cursor.query(f"""
@@ -164,11 +164,12 @@ class KeywordTableIndexRetriever(BaseRetriever):
     total_cost = 0
 
     prompt = self.question_template.format(question = question, max_keywords = self.max_keywords)
-    print(prompt)
+    # print(prompt)
     response, cost = llm_call(model = self.model, user_prompt = prompt)
     total_cost += cost
-    print(f"""{response["choices"][0]["message"]["content"]}""")
-    keywords = set(response["choices"][0]["message"]["content"].split("\n"))
+    ans = response["choices"][0]["message"]["content"]
+    # print(ans)
+    keywords = set(ans.split("\n"))
     
     match_count = {}
     if self.exact_match:
@@ -186,14 +187,14 @@ class KeywordTableIndexRetriever(BaseRetriever):
           SELECT * FROM {self.doc}_keywords
           ORDER BY
             Similarity(
-              SentenceFeatureExtractor({kw}),
+              SentenceFeatureExtractor(f"{kw}"),
               SentenceFeatureExtractor(keyword)
-            ) ASC
+            )
           LIMIT {self.top_k}
         """).df()
         for _, row in matches.iterrows():
           chunk_id = row[f"{self.doc}_keywords.chunk_id"]
-          print(f"""matched with {chunk_id}: {row[f"{self.doc}_keywords.keyword"]}""")
+          # print(f"""matched with {chunk_id}: {row[f"{self.doc}_keywords.keyword"]}""")
           if chunk_id not in match_count.keys():
             match_count[chunk_id] = 1
           else:
@@ -205,6 +206,6 @@ class KeywordTableIndexRetriever(BaseRetriever):
       chunks.append(self.cursor.query(f"""
         SELECT data FROM {self.doc} WHERE chunk_id = {chunk_id};
       """).df()[f"{self.doc}.data"][0])
-    print("\n\n\n".join(chunks))
+    # print("\n\n\n".join(chunks))
 
     return chunks, total_cost

@@ -39,6 +39,11 @@ class EvaluationResult:
   passing: bool
   score: str
   comments: str
+  
+  def __init__(self, passing: bool, score: str, comments: str) -> None:
+    self.passing = passing
+    self.score = score
+    self.comments = comments
 
 class Evaluator:
   def __init__(self, model: str = "gpt-3.5-turbo-1106", eval_template: str = DEFAULT_EVAL_PROMPT_TEMPLATE) -> None:
@@ -47,9 +52,12 @@ class Evaluator:
   
   def evaluate(self, context: str, question: str, answer: str) -> (EvaluationResult, int):
     prompt = self.eval_template.format(context = context, question = question, answer = answer)
+    # print(prompt)
     response, cost = llm_call(model = self.model, user_prompt = prompt)
     
-    score, comments = response["choices"][0]["message"]["content"].strip("\n", 1)
+    ans = response["choices"][0]["message"]["content"]
+    # print(ans)
+    score, comments = ans.split("\n", 1)
     
     return EvaluationResult(
       passing = (score == "YES"),
